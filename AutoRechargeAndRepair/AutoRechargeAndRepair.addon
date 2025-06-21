@@ -1,4 +1,4 @@
-## Title: AutoRecharger
+## Title: AutoRechargeAndRepair
 ## Author: Shienar
 ## APIVersion: 101046
 ## Version: 1.0.0
@@ -6,4 +6,4 @@
 ## ConsoleDependsOn: LibHarvensAddonSettings>=20004
 ## SavedVariables: ARSavedVariables
 
-AutoRecharger.lua
+AutoRechargeAndRepair.lua
