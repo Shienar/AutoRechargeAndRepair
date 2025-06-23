@@ -15,6 +15,11 @@ local function attemptCharge(weapon, gem)
 	if IsItemChargeable(BAG_WORN, weapon) then
 		local charges, maxCharges = GetChargeInfoForItem(BAG_WORN, weapon)
 		if (charges/maxCharges) < (AR.savedVariables.rechargePercentage/100) then
+			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
+				if AR.savedVariables.debugMessages then d("Cannot recharge item"..GetItemName(BAG_WORN, weapon).."while player is dead!") end
+				return
+			end
+			
 			ChargeItemWithSoulGem(BAG_WORN, weapon, BAG_BACKPACK, gem)
 			PlaySound(SOUNDS.INVENTORY_ITEM_APPLY_CHARGE)
 			if AR.savedVariables.debugMessages then d("Item charged: "..GetItemName(BAG_WORN, weapon)) end
@@ -26,6 +31,11 @@ local function attemptRepair(armor, kit)
 	if DoesItemHaveDurability(BAG_WORN, armor) then
 		local condition = GetItemCondition(BAG_WORN, armor)
 		if condition < AR.savedVariables.repairPercentage then
+			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
+				if AR.savedVariables.debugMessages then d("Cannot repair item"..GetItemName(BAG_WORN, armor).."while player is dead!") end
+				return
+			end
+			
 			RepairItemWithRepairKit(BAG_WORN, armor, BAG_BACKPACK, kit)
 			PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
 			if AR.savedVariables.debugMessages then d("Item repaired: "..GetItemName(BAG_WORN, armor)) end
@@ -34,8 +44,6 @@ local function attemptRepair(armor, kit)
 end
 
 function AR.ChangePlayerCombatState(event, inCombat)
-	
-	if inCombat == false then return end
 	
 	local backpack = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK) 
 	
@@ -83,6 +91,7 @@ function AR.ChangePlayerCombatState(event, inCombat)
 		if soulGemIndex == -1 then
 			if AR.savedVariables.debugMessages then d("Player does not have any filled soul gems to recharge weapons!") end
 		else
+			
 			attemptCharge(EQUIP_SLOT_MAIN_HAND, soulGemIndex)
 			attemptCharge(EQUIP_SLOT_OFF_HAND, soulGemIndex)
 			attemptCharge(EQUIP_SLOT_BACKUP_MAIN, soulGemIndex)
@@ -107,6 +116,7 @@ function AR.ChangePlayerCombatState(event, inCombat)
 			if repairKitIndex == -1 then
 				if AR.savedVariables.debugMessages then d("Player does not have any repair kits to repair armor!") end
 			else
+				
 				attemptRepair(EQUIP_SLOT_CHEST, repairKitIndex)
 				attemptRepair(EQUIP_SLOT_FEET, repairKitIndex)
 				attemptRepair(EQUIP_SLOT_HAND, repairKitIndex)
@@ -141,6 +151,7 @@ function AR.ChangePlayerCombatState(event, inCombat)
 					(DoesItemHaveDurability(BAG_WORN, EQUIP_SLOT_OFF_HAND) and GetItemCondition(BAG_WORN, EQUIP_SLOT_OFF_HAND) < AR.savedVariables.repairPercentage) then
 						
 						if inCombat == false then
+							
 							CallSecureProtected("UseItem", BAG_BACKPACK, repairKitIndex)
 							
 							PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
@@ -150,7 +161,6 @@ function AR.ChangePlayerCombatState(event, inCombat)
 			end
 		end
 	end
-	
 end
 
 function AR.merchantRepair(eventCode)
@@ -195,7 +205,7 @@ end
 
 function AR.Initialize()
 	AR.savedVariables = ZO_SavedVars:NewAccountWide("ARSavedVariables", 1, nil, AR.defaults, GetWorldName())
-
+	
 	--settings
 	local settings = LibHarvensAddonSettings:AddAddon("Auto Recharge and Repair")
 	local areSettingsDisabled = false
@@ -203,6 +213,7 @@ function AR.Initialize()
 	local generalSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "General",}
 	local rechargeSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "Recharge",}
 	local repairSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "Repair",}
+	
 	
 	local resetDefaults = {
         type = LibHarvensAddonSettings.ST_BUTTON,
@@ -229,7 +240,7 @@ function AR.Initialize()
         type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
         label = "Toggle Debug Messages", 
         tooltip = "Enabling this will create chat messages notifying you when the addon recharges or repairs on your behalf.",
-        default = AR.savedVariables.debugMessages,
+        default = AR.defaults.debugMessages,
         setFunction = function(state) 
             AR.savedVariables.debugMessages = state
         end,
