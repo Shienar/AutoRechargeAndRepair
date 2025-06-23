@@ -35,8 +35,9 @@ end
 
 function AR.ChangePlayerCombatState(event, inCombat)
 	
-	local backpack = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK) 
+	if inCombat == false then return end
 	
+	local backpack = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK) 
 	
 	if AR.savedVariables.autoRecharge then
 		local soulGemIndex = -1
