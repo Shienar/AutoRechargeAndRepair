@@ -16,7 +16,7 @@ local function attemptCharge(weapon, gem)
 		local charges, maxCharges = GetChargeInfoForItem(BAG_WORN, weapon)
 		if (charges/maxCharges) < (AR.savedVariables.rechargePercentage/100) then
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
-				if AR.savedVariables.debugMessages then d("Cannot recharge item"..GetItemName(BAG_WORN, weapon).."while player is dead!") end
+				if AR.savedVariables.debugMessages then d("Cannot recharge item"..GetItemName(BAG_WORN, weapon).." while player is dead!") end
 				return
 			end
 			
@@ -32,7 +32,7 @@ local function attemptRepair(armor, kit)
 		local condition = GetItemCondition(BAG_WORN, armor)
 		if condition < AR.savedVariables.repairPercentage then
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
-				if AR.savedVariables.debugMessages then d("Cannot repair item"..GetItemName(BAG_WORN, armor).."while player is dead!") end
+				if AR.savedVariables.debugMessages then d("Cannot repair item"..GetItemName(BAG_WORN, armor).." while player is dead!") end
 				return
 			end
 			
@@ -43,7 +43,7 @@ local function attemptRepair(armor, kit)
 	end
 end
 
-function AR.ChangePlayerCombatState(event, inCombat)
+local function delayedCombatChange(event, inCombat)
 	
 	local backpack = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK) 
 	
@@ -151,7 +151,12 @@ function AR.ChangePlayerCombatState(event, inCombat)
 					(DoesItemHaveDurability(BAG_WORN, EQUIP_SLOT_OFF_HAND) and GetItemCondition(BAG_WORN, EQUIP_SLOT_OFF_HAND) < AR.savedVariables.repairPercentage) then
 						
 						if inCombat == false then
-							
+								
+							if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
+								if AR.savedVariables.debugMessages then d("Cannot repair or recharge while player is dead!") end
+								return
+							end
+								
 							CallSecureProtected("UseItem", BAG_BACKPACK, repairKitIndex)
 							
 							PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
@@ -161,6 +166,12 @@ function AR.ChangePlayerCombatState(event, inCombat)
 			end
 		end
 	end
+end
+
+function AR.ChangePlayerCombatState(event, inCombat)
+	--call a function that calls the above function after 2 seconds.
+	--IsUnitDead is slow we I'm waiting for it.
+	zo_callLater(function() delayedCombatChange(event, inCombat) end, 1000)
 end
 
 function AR.merchantRepair(eventCode)
@@ -365,7 +376,6 @@ function AR.Initialize()
 	settings:AddSettings({generalSection, resetDefaults, toggle_debug})
 	settings:AddSettings({rechargeSection, toggle_recharge, slider_recharge, useCrownGem})
 	settings:AddSettings({repairSection, toggle_merchant, toggle_repair, slider_repair, useCrownRepair})
-	
 	
 	EVENT_MANAGER:RegisterForEvent(AR.name, EVENT_PLAYER_COMBAT_STATE, AR.ChangePlayerCombatState)
 	EVENT_MANAGER:RegisterForEvent(AR.name, EVENT_OPEN_STORE, AR.merchantRepair)
