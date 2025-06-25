@@ -16,13 +16,13 @@ local function attemptCharge(weapon, gem)
 		local charges, maxCharges = GetChargeInfoForItem(BAG_WORN, weapon)
 		if (charges/maxCharges) < (AR.savedVariables.rechargePercentage/100) then
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
-				if AR.savedVariables.debugMessages then d("Cannot recharge item"..GetItemName(BAG_WORN, weapon).." while player is dead!") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot recharge item \""..GetItemName(BAG_WORN, weapon).."\" while player is dead!") end
 				return
 			end
 			
 			ChargeItemWithSoulGem(BAG_WORN, weapon, BAG_BACKPACK, gem)
 			PlaySound(SOUNDS.INVENTORY_ITEM_APPLY_CHARGE)
-			if AR.savedVariables.debugMessages then d("Item charged: "..GetItemName(BAG_WORN, weapon)) end
+			if AR.savedVariables.debugMessages then AR.chat:Print("Item charged: \""..GetItemName(BAG_WORN, weapon).."\"") end
 		end
 	end
 end
@@ -32,13 +32,13 @@ local function attemptRepair(armor, kit)
 		local condition = GetItemCondition(BAG_WORN, armor)
 		if condition < AR.savedVariables.repairPercentage then
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
-				if AR.savedVariables.debugMessages then d("Cannot repair item"..GetItemName(BAG_WORN, armor).." while player is dead!") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot repair item \""..GetItemName(BAG_WORN, armor).."\" while player is dead!") end
 				return
 			end
 			
 			RepairItemWithRepairKit(BAG_WORN, armor, BAG_BACKPACK, kit)
 			PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
-			if AR.savedVariables.debugMessages then d("Item repaired: "..GetItemName(BAG_WORN, armor)) end
+			if AR.savedVariables.debugMessages then AR.chat:Print("Item repaired: \""..GetItemName(BAG_WORN, armor).."\"") end
 		end
 	end
 end
@@ -89,7 +89,7 @@ local function delayedCombatChange(event, inCombat)
 		end
 		
 		if soulGemIndex == -1 then
-			if AR.savedVariables.debugMessages then d("Player does not have any filled soul gems to recharge weapons!") end
+			if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have any filled soul gems to recharge weapons!") end
 		else
 			
 			attemptCharge(EQUIP_SLOT_MAIN_HAND, soulGemIndex)
@@ -114,7 +114,7 @@ local function delayedCombatChange(event, inCombat)
 			end
 		
 			if repairKitIndex == -1 then
-				if AR.savedVariables.debugMessages then d("Player does not have any repair kits to repair armor!") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have any repair kits to repair armor!") end
 			else
 				
 				attemptRepair(EQUIP_SLOT_CHEST, repairKitIndex)
@@ -138,7 +138,7 @@ local function delayedCombatChange(event, inCombat)
 			end
 			
 			if repairKitIndex == -1 then
-				if AR.savedVariables.debugMessages then d("Player does not have any crown repair kits to repair armor!") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have any crown repair kits to repair armor!") end
 			else
 				if GetItemCondition(BAG_WORN, EQUIP_SLOT_CHEST) < AR.savedVariables.repairPercentage or
 					GetItemCondition(BAG_WORN, EQUIP_SLOT_FEET) < AR.savedVariables.repairPercentage or
@@ -153,14 +153,18 @@ local function delayedCombatChange(event, inCombat)
 						if inCombat == false then
 								
 							if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
-								if AR.savedVariables.debugMessages then d("Cannot repair or recharge while player is dead!") end
+								if AR.savedVariables.debugMessages then AR.chat:Print("Cannot use crown repair kits while player is dead!") end
 								return
 							end
 								
-							CallSecureProtected("UseItem", BAG_BACKPACK, repairKitIndex)
+							local isSuccess = CallSecureProtected("UseItem", BAG_BACKPACK, repairKitIndex)
 							
-							PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
-							if AR.savedVariables.debugMessages then d("Armor repaired with crown repair kit!") end
+							if isSuccess == true then 
+								PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
+								if AR.savedVariables.debugMessages then AR.chat:Print("Armor repaired with crown repair kit!") end
+							else
+								if AR.savedVariables.debugMessages then AR.chat:Print("Crown Repair Failed. Player is in combat") end
+							end
 						end
 				end
 			end
@@ -171,7 +175,14 @@ end
 function AR.ChangePlayerCombatState(event, inCombat)
 	--call a function that calls the above function after 2 seconds.
 	--IsUnitDead is slow we I'm waiting for it.
-	zo_callLater(function() delayedCombatChange(event, inCombat) end, 1000)
+	
+
+	zo_callLater(function() 
+		if event == EVENT_PLAYER_ALIVE then 
+			inCombat = IsUnitInCombat("player")
+		end
+		delayedCombatChange(event, inCombat) 
+		end, 1000)
 end
 
 function AR.merchantRepair(eventCode)
@@ -207,15 +218,18 @@ function AR.merchantRepair(eventCode)
 				RepairItem(BAG_WORN, v)
 			end
 			
-			if AR.savedVariables.debugMessages then d("You spent "..cost.." gold to repair your gear.") end
+			if AR.savedVariables.debugMessages then AR.chat:Print("You spent "..cost.." gold to repair your gear.") end
 		else
-			if AR.savedVariables.debugMessages then d("You couldn't afford "..cost.." gold to repair your gear.") end
+			if AR.savedVariables.debugMessages then AR.chat:Print("You couldn't afford "..cost.." gold to repair your gear.") end
 		end
 	end
 end
 
 function AR.Initialize()
 	AR.savedVariables = ZO_SavedVars:NewAccountWide("ARSavedVariables", 1, nil, AR.defaults, GetWorldName())
+	
+	AR.chat = LibChatMessage("AutoRechargeAndRepair", "AR") 
+	LibChatMessage:SetTagPrefixMode(1)
 	
 	--settings
 	local settings = LibHarvensAddonSettings:AddAddon("Auto Recharge and Repair")
@@ -378,6 +392,7 @@ function AR.Initialize()
 	settings:AddSettings({repairSection, toggle_merchant, toggle_repair, slider_repair, useCrownRepair})
 	
 	EVENT_MANAGER:RegisterForEvent(AR.name, EVENT_PLAYER_COMBAT_STATE, AR.ChangePlayerCombatState)
+	EVENT_MANAGER:RegisterForEvent(AR.name, EVENT_PLAYER_ALIVE, AR.ChangePlayerCombatState)
 	EVENT_MANAGER:RegisterForEvent(AR.name, EVENT_OPEN_STORE, AR.merchantRepair)
 end
 	
