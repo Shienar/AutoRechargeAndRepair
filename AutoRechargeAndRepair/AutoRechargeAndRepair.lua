@@ -11,36 +11,50 @@ AR.defaults = {
 	useCrownRepair = false,
 }
 
-local function attemptCharge(weapon, gem)
+local function attemptCharge(weapon, gem, count)
 	if IsItemChargeable(BAG_WORN, weapon) then
 		local charges, maxCharges = GetChargeInfoForItem(BAG_WORN, weapon)
 		if (charges/maxCharges) < (AR.savedVariables.rechargePercentage/100) then
+			if gem == -1 or count == 0 then
+				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have a filled soul gem to recharge \""..GetItemName(BAG_WORN, weapon).."\"") end
+				return count
+			end
+			
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
 				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot recharge item \""..GetItemName(BAG_WORN, weapon).."\" while player is dead!") end
-				return
+				return count
 			end
 			
 			ChargeItemWithSoulGem(BAG_WORN, weapon, BAG_BACKPACK, gem)
 			PlaySound(SOUNDS.INVENTORY_ITEM_APPLY_CHARGE)
 			if AR.savedVariables.debugMessages then AR.chat:Print("Item charged: \""..GetItemName(BAG_WORN, weapon).."\"") end
+			return count - 1
 		end
 	end
+	return count
 end
 
-local function attemptRepair(armor, kit)
+local function attemptRepair(armor, kit, count)
 	if DoesItemHaveDurability(BAG_WORN, armor) then
 		local condition = GetItemCondition(BAG_WORN, armor)
 		if condition < AR.savedVariables.repairPercentage then
+			if kit == -1 or count == 0 then
+				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have a repair kit to repair \""..GetItemName(BAG_WORN, armor).."\"") end
+				return count
+			end
+			
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
 				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot repair item \""..GetItemName(BAG_WORN, armor).."\" while player is dead!") end
-				return
+				return count
 			end
 			
 			RepairItemWithRepairKit(BAG_WORN, armor, BAG_BACKPACK, kit)
 			PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
 			if AR.savedVariables.debugMessages then AR.chat:Print("Item repaired: \""..GetItemName(BAG_WORN, armor).."\"") end
+			return count - 1
 		end
 	end
+	return count
 end
 
 local function delayedCombatChange(event, inCombat)
@@ -49,12 +63,14 @@ local function delayedCombatChange(event, inCombat)
 	
 	if AR.savedVariables.autoRecharge then
 		local soulGemIndex = -1
+		local soulGemCount = 0
 		
 		if AR.savedVariables.preferCrownGem then
 			--Crown gems
 			for k, v in pairs(backpack) do
 				if IsItemSoulGem(SOUL_GEM_TYPE_FILLED, BAG_BACKPACK, v.slotIndex) and IsItemFromCrownStore(BAG_BACKPACK, v.slotIndex) then
 					soulGemIndex = v.slotIndex
+					soulGemCount = v.stackCount
 					break
 				end
 			end
@@ -64,6 +80,7 @@ local function delayedCombatChange(event, inCombat)
 				for k, v in pairs(backpack) do
 					if IsItemSoulGem(SOUL_GEM_TYPE_FILLED, BAG_BACKPACK, v.slotIndex) and IsItemFromCrownStore(BAG_BACKPACK, v.slotIndex) == false then
 						soulGemIndex = v.slotIndex
+						soulGemCount = v.stackCount
 						break
 					end
 				end
@@ -73,6 +90,7 @@ local function delayedCombatChange(event, inCombat)
 			for k, v in pairs(backpack) do
 				if IsItemSoulGem(SOUL_GEM_TYPE_FILLED, BAG_BACKPACK, v.slotIndex) and IsItemFromCrownStore(BAG_BACKPACK, v.slotIndex) == false then
 					soulGemIndex = v.slotIndex
+					soulGemCount = v.stackCount
 					break
 				end
 			end
@@ -82,25 +100,22 @@ local function delayedCombatChange(event, inCombat)
 				for k, v in pairs(backpack) do
 					if IsItemSoulGem(SOUL_GEM_TYPE_FILLED, BAG_BACKPACK, v.slotIndex) and IsItemFromCrownStore(BAG_BACKPACK, v.slotIndex) then
 						soulGemIndex = v.slotIndex
+						soulGemCount = v.stackCount
 						break
 					end
 				end
 			end
 		end
 		
-		if soulGemIndex == -1 then
-			if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have any filled soul gems to recharge weapons!") end
-		else
-			
-			attemptCharge(EQUIP_SLOT_MAIN_HAND, soulGemIndex)
-			attemptCharge(EQUIP_SLOT_OFF_HAND, soulGemIndex)
-			attemptCharge(EQUIP_SLOT_BACKUP_MAIN, soulGemIndex)
-			attemptCharge(EQUIP_SLOT_BACKUP_OFF, soulGemIndex)
-		end
+		soulGemCount = attemptCharge(EQUIP_SLOT_MAIN_HAND, soulGemIndex, soulGemCount)
+		soulGemCount = attemptCharge(EQUIP_SLOT_OFF_HAND, soulGemIndex, soulGemCount)
+		soulGemCount = attemptCharge(EQUIP_SLOT_BACKUP_MAIN, soulGemIndex, soulGemCount)
+		soulGemCount = attemptCharge(EQUIP_SLOT_BACKUP_OFF, soulGemIndex, soulGemCount)
 	end
 	
 	if AR.savedVariables.autoRepair then
 		local repairKitIndex = -1
+		local repairKitCount = 0
 		
 		if AR.savedVariables.useCrownRepair == false then
 			for k, v in pairs(backpack) do
@@ -109,24 +124,21 @@ local function delayedCombatChange(event, inCombat)
 					IsItemNonGroupRepairKit(BAG_BACKPACK, v.slotIndex) then
 					
 					repairKitIndex = v.slotIndex
+					repairKitCount = v.stackCount
 					break
 				end
 			end
-		
-			if repairKitIndex == -1 then
-				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have any repair kits to repair armor!") end
-			else
-				
-				attemptRepair(EQUIP_SLOT_CHEST, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_FEET, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_HAND, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_HEAD, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_LEGS, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_SHOULDERS, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_WAIST, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_BACKUP_OFF, repairKitIndex)
-				attemptRepair(EQUIP_SLOT_OFF_HAND, repairKitIndex)
-			end
+			
+			repairKitCount = attemptRepair(EQUIP_SLOT_CHEST, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_FEET, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_HAND, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_HEAD, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_LEGS, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_SHOULDERS, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_WAIST, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_BACKUP_OFF, repairKitIndex, repairKitCount)
+			repairKitCount = attemptRepair(EQUIP_SLOT_OFF_HAND, repairKitIndex, repairKitCount)
+			
 		else
 			for k, v in pairs(backpack) do
 				if GetItemName(BAG_BACKPACK, v.slotIndex) == "Crown Repair Kit" or
@@ -137,21 +149,22 @@ local function delayedCombatChange(event, inCombat)
 				end
 			end
 			
-			if repairKitIndex == -1 then
-				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have any crown repair kits to repair armor!") end
-			else
-				if GetItemCondition(BAG_WORN, EQUIP_SLOT_CHEST) < AR.savedVariables.repairPercentage or
-					GetItemCondition(BAG_WORN, EQUIP_SLOT_FEET) < AR.savedVariables.repairPercentage or
-					GetItemCondition(BAG_WORN, EQUIP_SLOT_HAND) < AR.savedVariables.repairPercentage or
-					GetItemCondition(BAG_WORN, EQUIP_SLOT_HEAD) < AR.savedVariables.repairPercentage or
-					GetItemCondition(BAG_WORN, EQUIP_SLOT_LEGS) < AR.savedVariables.repairPercentage or
-					GetItemCondition(BAG_WORN, EQUIP_SLOT_SHOULDERS) < AR.savedVariables.repairPercentage or
-					GetItemCondition(BAG_WORN, EQUIP_SLOT_WAIST) < AR.savedVariables.repairPercentage or
-					(DoesItemHaveDurability(BAG_WORN, EQUIP_SLOT_BACKUP_OFF) and GetItemCondition(BAG_WORN, EQUIP_SLOT_BACKUP_OFF) < AR.savedVariables.repairPercentage) or
-					(DoesItemHaveDurability(BAG_WORN, EQUIP_SLOT_OFF_HAND) and GetItemCondition(BAG_WORN, EQUIP_SLOT_OFF_HAND) < AR.savedVariables.repairPercentage) then
-						
-						if inCombat == false then
-								
+			
+			if GetItemCondition(BAG_WORN, EQUIP_SLOT_CHEST) < AR.savedVariables.repairPercentage or
+				GetItemCondition(BAG_WORN, EQUIP_SLOT_FEET) < AR.savedVariables.repairPercentage or
+				GetItemCondition(BAG_WORN, EQUIP_SLOT_HAND) < AR.savedVariables.repairPercentage or
+				GetItemCondition(BAG_WORN, EQUIP_SLOT_HEAD) < AR.savedVariables.repairPercentage or
+				GetItemCondition(BAG_WORN, EQUIP_SLOT_LEGS) < AR.savedVariables.repairPercentage or
+				GetItemCondition(BAG_WORN, EQUIP_SLOT_SHOULDERS) < AR.savedVariables.repairPercentage or
+				GetItemCondition(BAG_WORN, EQUIP_SLOT_WAIST) < AR.savedVariables.repairPercentage or
+				(DoesItemHaveDurability(BAG_WORN, EQUIP_SLOT_BACKUP_OFF) and GetItemCondition(BAG_WORN, EQUIP_SLOT_BACKUP_OFF) < AR.savedVariables.repairPercentage) or
+				(DoesItemHaveDurability(BAG_WORN, EQUIP_SLOT_OFF_HAND) and GetItemCondition(BAG_WORN, EQUIP_SLOT_OFF_HAND) < AR.savedVariables.repairPercentage) 
+			then
+					
+					if inCombat == false then
+						if repairKitIndex == -1 then
+							if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have any crown repair kits to repair armor!") end
+						else
 							if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
 								if AR.savedVariables.debugMessages then AR.chat:Print("Cannot use crown repair kits while player is dead!") end
 								return
@@ -166,16 +179,16 @@ local function delayedCombatChange(event, inCombat)
 								if AR.savedVariables.debugMessages then AR.chat:Print("Crown Repair Failed. Player is in combat") end
 							end
 						end
-				end
+					end
 			end
+			
 		end
 	end
 end
 
 function AR.ChangePlayerCombatState(event, inCombat)
 	--call a function that calls the above function after 2 seconds.
-	--IsUnitDead is slow we I'm waiting for it.
-	
+	--IsUnitDead is slow so I'm waiting for it.
 
 	zo_callLater(function() 
 		if event == EVENT_PLAYER_ALIVE then 
