@@ -1,6 +1,6 @@
 ## Title: AutoRechargeAndRepair
 ## Author: Shienar
-## APIVersion: 101046
+## APIVersion: 101047
 ## Version: 1.0.0
 ## IsLibrary: False
 ## ConsoleDependsOn: LibHarvensAddonSettings>=20004 LibChatMessage
