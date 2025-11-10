@@ -16,18 +16,18 @@ local function attemptCharge(weapon, gem, count)
 		local charges, maxCharges = GetChargeInfoForItem(BAG_WORN, weapon)
 		if (charges/maxCharges) < (AR.savedVariables.rechargePercentage/100) then
 			if gem == -1 or count == 0 then
-				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have a filled soul gem to recharge \""..GetItemName(BAG_WORN, weapon).."\"") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have a filled soul gem to recharge \""..zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemName(BAG_WORN, weapon)).."\"") end
 				return count
 			end
 			
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
-				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot recharge item \""..GetItemName(BAG_WORN, weapon).."\" while player is dead!") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot recharge item \""..zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemName(BAG_WORN, weapon)).."\" while player is dead!") end
 				return count
 			end
 			
 			ChargeItemWithSoulGem(BAG_WORN, weapon, BAG_BACKPACK, gem)
 			PlaySound(SOUNDS.INVENTORY_ITEM_APPLY_CHARGE)
-			if AR.savedVariables.debugMessages then AR.chat:Print("Item charged: \""..GetItemName(BAG_WORN, weapon).."\"") end
+			if AR.savedVariables.debugMessages then AR.chat:Print("Item charged: \""..zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemName(BAG_WORN, weapon)).."\"") end
 			return count - 1
 		end
 	end
@@ -39,18 +39,18 @@ local function attemptRepair(armor, kit, count)
 		local condition = GetItemCondition(BAG_WORN, armor)
 		if condition < AR.savedVariables.repairPercentage then
 			if kit == -1 or count == 0 then
-				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have a repair kit to repair \""..GetItemName(BAG_WORN, armor).."\"") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Player does not have a repair kit to repair \""..zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemName(BAG_WORN, armor)).."\"") end
 				return count
 			end
 			
 			if IsUnitDead("player") or GetUnitPower("player", COMBAT_MECHANIC_FLAGS_HEALTH) <= 0 then
-				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot repair item \""..GetItemName(BAG_WORN, armor).."\" while player is dead!") end
+				if AR.savedVariables.debugMessages then AR.chat:Print("Cannot repair item \""..zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemName(BAG_WORN, armor)).."\" while player is dead!") end
 				return count
 			end
 			
 			RepairItemWithRepairKit(BAG_WORN, armor, BAG_BACKPACK, kit)
 			PlaySound(SOUNDS.INVENTORY_ITEM_REPAIR)
-			if AR.savedVariables.debugMessages then AR.chat:Print("Item repaired: \""..GetItemName(BAG_WORN, armor).."\"") end
+			if AR.savedVariables.debugMessages then AR.chat:Print("Item repaired: \""..zo_strformat(SI_TOOLTIP_ITEM_NAME, GetItemName(BAG_WORN, armor)).."\"") end
 			return count - 1
 		end
 	end
