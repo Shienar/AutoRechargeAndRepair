@@ -1,4 +1,5 @@
-AR = { name = "AutoRechargeAndRepair" }
+local AR = { name = "AutoRechargeAndRepair" }
+AutoRecharge = AR
 
 AR.defaults = {
 	debugMessages = true,
