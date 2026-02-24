@@ -244,165 +244,167 @@ function AR.Initialize()
 	AR.chat = LibChatMessage("AutoRechargeAndRepair", "AR") 
 	LibChatMessage:SetTagPrefixMode(1)
 	
-	--settings
-	local settings = LibHarvensAddonSettings:AddAddon("Auto Recharge and Repair")
-	local areSettingsDisabled = false
-	
-	local generalSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "General",}
-	local rechargeSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "Recharge",}
-	local repairSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "Repair",}
-	
-	
-	local resetDefaults = {
-        type = LibHarvensAddonSettings.ST_BUTTON,
-        label = "Reset Defaults",
-        tooltip = "",
-        buttonText = "RESET",
-        clickHandler = function(control, button)
-			AR.savedVariables.debugMessages = AR.defaults.debugMessages
-			
-			AR.savedVariables.autoRecharge = AR.defaults.autoRecharge
-			AR.savedVariables.autoRepair = AR.defaults.autoRepair
-			AR.savedVariables.autoMerchant = AR.defaults.autoMerchant
-			
-			AR.savedVariables.rechargePercentage = AR.defaults.rechargePercentage
-			AR.savedVariables.repairPercentage = AR.defaults.repairPercentage
-			
-			AR.savedVariables.preferCrownGem = AR.defaults.preferCrownGem
-			AR.savedVariables.useCrownRepair = AR.defaults.useCrownRepair
-		end,
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local toggle_debug = {
-        type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
-        label = "Toggle Debug Messages", 
-        tooltip = "Enabling this will create chat messages notifying you when the addon recharges or repairs on your behalf.",
-        default = AR.defaults.debugMessages,
-        setFunction = function(state) 
-            AR.savedVariables.debugMessages = state
-        end,
-        getFunction = function() 
-            return AR.savedVariables.debugMessages
-        end,
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local toggle_recharge = {
-        type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
-        label = "Toggle Auto Recharge", 
-        tooltip = "Automatically recharge your weapons when you enter/exit combat",
-        default = AR.savedVariables.autoRecharge,
-        setFunction = function(state) 
-            AR.savedVariables.autoRecharge = state
-        end,
-        getFunction = function() 
-            return AR.savedVariables.autoRecharge
-        end,
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local slider_recharge = {
-        type = LibHarvensAddonSettings.ST_SLIDER,
-        label = "Recharge Percentage",
-        tooltip = "Weapons will be recharged when they drop below this percentage of charge.",
-        setFunction = function(value)
-			AR.savedVariables.rechargePercentage = value
-			
-			 end,
-        getFunction = function()
-            return AR.savedVariables.rechargePercentage
-        end,
-        default = AR.defaults.rechargePercentage,
-        min = 1,
-        max = 100,
-        step = 1,
-        unit = "%", --optional unit
-        format = "%d", --value format
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local useCrownGem = {
-        type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
-        label = "Prefer Crown Gems", 
-        tooltip = "Change whether the addon will search for crown soul gems or regular soul gems first.",
-        default = AR.savedVariables.preferCrownGem,
-        setFunction = function(state) 
-            AR.savedVariables.preferCrownGem = state
-        end,
-        getFunction = function() 
-            return AR.savedVariables.preferCrownGem
-        end,
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local toggle_merchant = {
-        type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
-        label = "Toggle Auto Merchant Repair", 
-        tooltip = "Automatically spends gold to repair your gear when you talk to a merchant.",
-        default = AR.savedVariables.autoMerchant,
-        setFunction = function(state) 
-            AR.savedVariables.autoMerchant = state
-        end,
-        getFunction = function() 
-            return AR.savedVariables.autoMerchant
-        end,
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local toggle_repair = {
-        type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
-        label = "Toggle Auto Repair", 
-        tooltip = "Automatically repairs your armor as you enter/exit combat",
-        default = AR.savedVariables.autoRepair,
-        setFunction = function(state) 
-            AR.savedVariables.autoRepair = state
-        end,
-        getFunction = function() 
-            return AR.savedVariables.autoRepair
-        end,
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local slider_repair = {
-        type = LibHarvensAddonSettings.ST_SLIDER,
-        label = "Repair Percentage",
-        tooltip = "Armor will be repaired when they drop below this percentage of durability",
-        setFunction = function(value)
-			AR.savedVariables.repairPercentage = value
-			
-			 end,
-        getFunction = function()
-            return AR.savedVariables.repairPercentage
-        end,
-        default = AR.defaults.repairPercentage,
-        min = 1,
-        max = 100,
-        step = 1,
-        unit = "%", --optional unit
-        format = "%d", --value format
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	local useCrownRepair= {
-        type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
-        label = "Use Crown Repair Kits", 
-        tooltip = "Toggle whether this addon will try to repair with regular repair kits or crown repair kits.\n\n"..
-		"Note: Crown armor repair kit checks can only occur as you exit combat, not as you enter it.",
-        default = AR.savedVariables.useCrownRepair,
-        setFunction = function(state) 
-            AR.savedVariables.useCrownRepair = state
-        end,
-        getFunction = function() 
-            return AR.savedVariables.useCrownRepair
-        end,
-        disable = function() return areSettingsDisabled end,
-    }
-	
-	
-	settings:AddSettings({generalSection, resetDefaults, toggle_debug})
-	settings:AddSettings({rechargeSection, toggle_recharge, slider_recharge, useCrownGem})
-	settings:AddSettings({repairSection, toggle_merchant, toggle_repair, slider_repair, useCrownRepair})
+	if LibHarvensAddonSettings then
+		--settings
+		local settings = LibHarvensAddonSettings:AddAddon("Auto Recharge and Repair")
+		local areSettingsDisabled = false
+		
+		local generalSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "General",}
+		local rechargeSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "Recharge",}
+		local repairSection = {type = LibHarvensAddonSettings.ST_SECTION,label = "Repair",}
+		
+		
+		local resetDefaults = {
+			type = LibHarvensAddonSettings.ST_BUTTON,
+			label = "Reset Defaults",
+			tooltip = "",
+			buttonText = "RESET",
+			clickHandler = function(control, button)
+				AR.savedVariables.debugMessages = AR.defaults.debugMessages
+				
+				AR.savedVariables.autoRecharge = AR.defaults.autoRecharge
+				AR.savedVariables.autoRepair = AR.defaults.autoRepair
+				AR.savedVariables.autoMerchant = AR.defaults.autoMerchant
+				
+				AR.savedVariables.rechargePercentage = AR.defaults.rechargePercentage
+				AR.savedVariables.repairPercentage = AR.defaults.repairPercentage
+				
+				AR.savedVariables.preferCrownGem = AR.defaults.preferCrownGem
+				AR.savedVariables.useCrownRepair = AR.defaults.useCrownRepair
+			end,
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local toggle_debug = {
+			type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
+			label = "Toggle Debug Messages", 
+			tooltip = "Enabling this will create chat messages notifying you when the addon recharges or repairs on your behalf.",
+			default = AR.defaults.debugMessages,
+			setFunction = function(state) 
+				AR.savedVariables.debugMessages = state
+			end,
+			getFunction = function() 
+				return AR.savedVariables.debugMessages
+			end,
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local toggle_recharge = {
+			type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
+			label = "Toggle Auto Recharge", 
+			tooltip = "Automatically recharge your weapons when you enter/exit combat",
+			default = AR.savedVariables.autoRecharge,
+			setFunction = function(state) 
+				AR.savedVariables.autoRecharge = state
+			end,
+			getFunction = function() 
+				return AR.savedVariables.autoRecharge
+			end,
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local slider_recharge = {
+			type = LibHarvensAddonSettings.ST_SLIDER,
+			label = "Recharge Percentage",
+			tooltip = "Weapons will be recharged when they drop below this percentage of charge.",
+			setFunction = function(value)
+				AR.savedVariables.rechargePercentage = value
+				
+				end,
+			getFunction = function()
+				return AR.savedVariables.rechargePercentage
+			end,
+			default = AR.defaults.rechargePercentage,
+			min = 1,
+			max = 100,
+			step = 1,
+			unit = "%", --optional unit
+			format = "%d", --value format
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local useCrownGem = {
+			type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
+			label = "Prefer Crown Gems", 
+			tooltip = "Change whether the addon will search for crown soul gems or regular soul gems first.",
+			default = AR.savedVariables.preferCrownGem,
+			setFunction = function(state) 
+				AR.savedVariables.preferCrownGem = state
+			end,
+			getFunction = function() 
+				return AR.savedVariables.preferCrownGem
+			end,
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local toggle_merchant = {
+			type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
+			label = "Toggle Auto Merchant Repair", 
+			tooltip = "Automatically spends gold to repair your gear when you talk to a merchant.",
+			default = AR.savedVariables.autoMerchant,
+			setFunction = function(state) 
+				AR.savedVariables.autoMerchant = state
+			end,
+			getFunction = function() 
+				return AR.savedVariables.autoMerchant
+			end,
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local toggle_repair = {
+			type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
+			label = "Toggle Auto Repair", 
+			tooltip = "Automatically repairs your armor as you enter/exit combat",
+			default = AR.savedVariables.autoRepair,
+			setFunction = function(state) 
+				AR.savedVariables.autoRepair = state
+			end,
+			getFunction = function() 
+				return AR.savedVariables.autoRepair
+			end,
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local slider_repair = {
+			type = LibHarvensAddonSettings.ST_SLIDER,
+			label = "Repair Percentage",
+			tooltip = "Armor will be repaired when they drop below this percentage of durability",
+			setFunction = function(value)
+				AR.savedVariables.repairPercentage = value
+				
+				end,
+			getFunction = function()
+				return AR.savedVariables.repairPercentage
+			end,
+			default = AR.defaults.repairPercentage,
+			min = 1,
+			max = 100,
+			step = 1,
+			unit = "%", --optional unit
+			format = "%d", --value format
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		local useCrownRepair= {
+			type = LibHarvensAddonSettings.ST_CHECKBOX, --setting type
+			label = "Use Crown Repair Kits", 
+			tooltip = "Toggle whether this addon will try to repair with regular repair kits or crown repair kits.\n\n"..
+			"Note: Crown armor repair kit checks can only occur as you exit combat, not as you enter it.",
+			default = AR.savedVariables.useCrownRepair,
+			setFunction = function(state) 
+				AR.savedVariables.useCrownRepair = state
+			end,
+			getFunction = function() 
+				return AR.savedVariables.useCrownRepair
+			end,
+			disable = function() return areSettingsDisabled end,
+		}
+		
+		
+		settings:AddSettings({generalSection, resetDefaults, toggle_debug})
+		settings:AddSettings({rechargeSection, toggle_recharge, slider_recharge, useCrownGem})
+		settings:AddSettings({repairSection, toggle_merchant, toggle_repair, slider_repair, useCrownRepair})
+	end
 	
 	EVENT_MANAGER:RegisterForEvent(AR.name, EVENT_PLAYER_COMBAT_STATE, AR.ChangePlayerCombatState)
 	EVENT_MANAGER:RegisterForEvent(AR.name, EVENT_PLAYER_ALIVE, AR.ChangePlayerCombatState)

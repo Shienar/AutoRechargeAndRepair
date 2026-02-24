@@ -4,7 +4,8 @@
 ## AddOnVersion: 10503
 ## Version: 1.5.3
 ## IsLibrary: False
-## ConsoleDependsOn: LibHarvensAddonSettings>=20004 LibChatMessage
+## OptionalDependsOn: LibHarvensAddonSettings>=20004
+## ConsoleDependsOn: LibChatMessage
 ## SavedVariables: ARSavedVariables
 
 AutoRechargeAndRepair.lua
